@@ -213,7 +213,9 @@ always @(posedge clk_i or posedge rst_i) begin
                     state <= 2'd1;
 
                 end
-                
+                else begin
+                    op_complete <= 1'b1;
+                end
 
                  //sequentially? comb?
                 //idx_b = RPB_arr[CIA_arr[idx_a]]; //req for state 1
