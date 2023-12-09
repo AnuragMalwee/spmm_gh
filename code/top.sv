@@ -4,13 +4,19 @@
 
 module top(
             input wire clk_i, rst_i, start_i,
-            input [3:0] rows_A_i, rows_B_i,
-            input wire [511:0] NVA_i, NVB_i, CIA_i, CIB_i, RPA_i, RPB_i,
-            output wire [511:0] NVC_o, CIC_o, RPC_o,
-            output wire computing_o, op_complete_o
 
-            //input matrix dimensions
-    );
+            input [3:0] rows_A_i, //rows_B_i,
+            
+            input logic [0:15][31:0] NVA_i, NVB_i, 
+            input logic [0:15][3:0]  CIA_i, CIB_i,
+            input logic [0:15][3:0] RPA_i, RPB_i, 
+
+            output logic [0:15][31:0] NVC_o,
+            output logic [0:15][3:0] CIC_o,
+            output logic [0:15][3:0] RPC_o,
+            
+            output wire computing_o, op_complete_o
+        );
 
 
 
@@ -30,7 +36,7 @@ logic [3:0] idx_c_search, idx_c_empty; //For NVC_arr, CIC_arr, currently searche
 //counters and limits
 logic [3:0] elements_in_row_A, elements_in_row_B; //number of non-zero elements in current rows of A and B
 logic [3:0] count_in_row_A, count_in_row_B; //number of NZ elements left in current rows of A and B
-logic [3:0] rows_A, rows_B; //total number of rows in A and B matrices
+logic [3:0] rows_A; //rows_B; //total number of rows in A and B matrices
 
 // array buffer outputs
 logic [0:15][31:0] NVA_arr, NVB_arr, NVC_arr;
@@ -120,6 +126,9 @@ indexed_rsh_arr irsh_CIC (
 assign op_complete_o = op_complete;
 assign computing_o = computing;
 
+assign NVC_o = NVC_arr;
+assign CIC_o = CIC_arr;
+assign RPC_o = RPC_arr;
 
 
 ////////////// index logic ////////////////////////
@@ -155,13 +164,13 @@ end
 
 always @(posedge clk_i or posedge rst_i) begin
 
-    if(rst_i or start_i) begin
+    if(rst_i) begin
         
         state <= 0;
 
         //counter limits
         rows_A <= rows_A_i;
-        rows_B <= rows_B_i;
+        //rows_B <= rows_B_i;
         count_in_row_A <= '0;
         count_in_row_B <= '0;
         
@@ -228,8 +237,6 @@ always @(posedge clk_i or posedge rst_i) begin
 
                 if(count_in_row_A != 0) begin
                     
-                    idx_a <= idx_a + 1;
-
                     idx_b <= RPB_arr[RP_idx_b];
                     count_in_row_B <= elements_in_row_B;
 
@@ -331,8 +338,8 @@ always @(posedge clk_i or posedge rst_i) begin
                     //check next element in row A, and next row in B
                     
                     count_in_row_A <= count_in_row_A - 1;
-                    
-                    RP_idx_b <= RP_idx_b + 1;
+                    idx_a <= idx_a + 1;
+                    //RP_idx_b <= RP_idx_b + 1; already handled in combinational part
 
                     state <= 2'd1;
 

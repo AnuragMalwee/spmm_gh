@@ -2,20 +2,26 @@
 
 module tb_top();
 
-logic clk_tb, rst_tb;
-logic [0:15][31:0] NVA_tb, NVB_tb;
-logic [0:15][3:0]  CIA_tb, CIB_tb, RPA_tb, RPB_tb;
-logic [0:15][31:0] NVC_tb, CIC_tb, RPC_tb;
-logic op_complete_tb;
+logic clk_tb, rst_tb, start_tb;
+logic [3:0] rows_A_tb;
+
+logic [0:15][31:0] NVA_tb, NVB_tb, NVC_tb;
+logic [0:15][3:0]  CIA_tb, CIB_tb, CIC_tb; 
+logic [0:15][3:0] RPA_tb, RPB_tb, RPC_tb;
+
+logic op_complete_tb, computing_tb;
 
 top
-//#(
-//        .data_width_param(32),
-//        .max_elements_param(16),
-//        .idx_width_param(4) )
+#(
+        .data_width_param(32),
+        .max_elements_param(16),
+        .idx_width_param(4) )
     dut (
             .clk_i(clk_tb),
             .rst_i(rst_tb),
+            .start_i(start_tb),
+
+            .rows_A_i(rows_A_tb),
             
             .NVA_i(NVA_tb),
             .CIA_i(CIA_tb),
@@ -29,7 +35,8 @@ top
             .CIC_o(CIC_tb),
             .RPC_o(RPC_tb),
             
-            .op_complete(op_complete_tb)
+            .computing_o(computing_tb),
+            .op_complete_o(op_complete_tb)
         );
 
 //input initializations
@@ -41,7 +48,6 @@ always_comb begin
 //         0
 
 //         endcase
-        
         
 //         NVA_tb [i] = i;
 //         CIA_tb [i] = i;
@@ -59,9 +65,10 @@ NVA_tb [7:15] = '0;
 CIA_tb [0:6] = {4'd2, 4'd1, 4'd2, 4'd0, 4'd3, 4'd0, 4'd1};
 CIA_tb [7:15] = '0;
 
-RPA_tb [0:5] = {4'd0, 4'd1, 4'd3, 4'd5, 4'd7};
-RPA_tb [6:15] = '0;
+RPA_tb [0:4] = {4'd0, 4'd1, 4'd3, 4'd5, 4'd7};
+RPA_tb [5:15] = '0;
 
+rows_A_tb [3:0] = 4'd4;
 
 
 NVB_tb [0:7] = {32'h1, 32'h3, 32'h1, 32'h2, 32'h2, 32'h1, 32'h5, 32'h7};
@@ -70,8 +77,8 @@ NVB_tb [8:15] = '0;
 CIB_tb [0:7] = {4'd0, 4'd2, 4'd3, 4'd0, 4'd2, 4'd1, 4'd2, 4'd3};
 CIB_tb [8:15] = '0;
 
-RPB_tb [0:5] = {4'd0, 4'd3, 4'd3, 4'd5, 4'd8};
-RPB_tb [6:15] = '0;
+RPB_tb [0:4] = {4'd0, 4'd3, 4'd3, 4'd5, 4'd8};
+RPB_tb [5:15] = '0;
 
 end
 
@@ -90,7 +97,11 @@ initial begin
         #10;
         rst_tb = 1'b0;
         #10;
-        #200;
+        start_tb = 1'b1;
+        #10;
+        start_tb = 1'b0;
+        #10;
+        #500;
 
         $finish();
 end
