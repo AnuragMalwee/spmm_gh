@@ -3,9 +3,9 @@
 //Top module
 
 module top(
-            input wire clk_i, rst_i, start_i,
+            input logic clk_i, rst_i, start_i,
 
-            input [3:0] rows_A_i, //rows_B_i,
+            input logic [3:0] rows_A_i, //rows_B_i,
             
             input logic [0:15][31:0] NVA_i, NVB_i, 
             input logic [0:15][3:0]  CIA_i, CIB_i,
@@ -15,7 +15,7 @@ module top(
             output logic [0:15][3:0] CIC_o,
             output logic [0:15][3:0] RPC_o,
             
-            output wire computing_o, op_complete_o
+            output logic computing_o, op_complete_o
         );
 
 
@@ -45,7 +45,7 @@ logic [0:15][31:0] NVC_arr_irsh;
 logic [0:15][3:0] CIC_arr_irsh;
 
 //runtime variable signals
-logic [31:0] scalar_A, part_result;
+logic [31:0] scalar_A, scalar_B, part_result;
 logic [3:0] RPC_val;
 
 //output status
@@ -107,17 +107,29 @@ arr_reg RPB_buf (   .clk_i(clk_i), .rst_i(rst_i),
 //                        );
 
 //indexed_right_shifter
-indexed_rsh_arr irsh_NVC (
+indexed_rsh_arr
+#(
+    .data_width_param(32),
+    .max_elements_param(16),
+    .idx_width_param(4)
+)
+irsh_NVC (
                         .arr(NVC_arr),
                         .idx(idx_c_search),
                         .insert_value(part_result),
                         .new_arr(NVC_arr_irsh)
 );
 
-indexed_rsh_arr irsh_CIC (
+indexed_rsh_arr
+#(
+    .data_width_param(4),
+    .max_elements_param(16),
+    .idx_width_param(4)
+)
+irsh_CIC (
                         .arr(CIC_arr),
                         .idx(idx_c_search),
-                        .insert_value(part_result),
+                        .insert_value(CIB_arr[idx_b]),
                         .new_arr(CIC_arr_irsh)
 );
 
@@ -133,6 +145,7 @@ assign RPC_o = RPC_arr;
 
 ////////////// index logic ////////////////////////
 assign scalar_A = NVA_arr[idx_a];
+assign scalar_B = NVB_arr[idx_b];
 
 assign RP_idx_b = CIA_arr[idx_a]; //colidx_a equivalent, ref: paper - algo
 //assign idx_b = RPB_arr[RP_idx_b];
@@ -144,13 +157,13 @@ assign elements_in_row_B = RPB_arr[RP_idx_b + 1] - RPB_arr[RP_idx_b];
 
 
 //////////// scalar - scalar multiplier (normal multiplication for partial product) /////////////////////////
-assign part_result = scalar_A * NVB_arr[idx_b];
+assign part_result = scalar_A * scalar_B;
 
 
 
 ///////////// enable computing ////////////////
 always @(posedge clk_i) begin
-    if (start_i) begin
+    if (start_i && !rst_i) begin
         
         // rows_A <= rows_A_i;
         // rows_B <= rows_B_i;
@@ -194,6 +207,7 @@ always @(posedge clk_i or posedge rst_i) begin
         RPC_arr <= '0;
         
         op_complete <= '0;
+        computing <= '0;
 
     end
     else if (computing) begin
@@ -217,7 +231,7 @@ always @(posedge clk_i or posedge rst_i) begin
                     idx_a <= RPA_arr[RP_idx_a];    
                     count_in_row_A <= elements_in_row_A;
 
-                    RPC_val <= '0;
+                    //RPC_val <= '0;
 
                     state <= 2'd1;
 
@@ -253,7 +267,7 @@ always @(posedge clk_i or posedge rst_i) begin
                     RP_idx_a <= RP_idx_a + 1;
                     rows_A <= rows_A - 1;
 
-                    RPC_arr[RP_idx_c] <= RPC_val;
+                    RPC_arr[RP_idx_c + 1] <= RPC_val;
 
                     state <= 2'd0;
 
@@ -283,6 +297,7 @@ always @(posedge clk_i or posedge rst_i) begin
 
                         //update
                         RPC_val <= RPC_val + 1;
+                        idx_c_search <= idx_c_search + 1; //???
                         idx_c_empty <= idx_c_empty + 1;
 
                         count_in_row_B <= count_in_row_B - 1;

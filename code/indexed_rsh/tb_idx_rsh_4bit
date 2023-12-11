@@ -1,4 +1,4 @@
-//idx rsh 32bit tb
+//idx rsh 4bit tb
 
 `timescale 1ns / 1ps
 
@@ -10,12 +10,12 @@
 
 module tb_indexed_rsh_arr();
 
-logic [0:15][31:0] arr_tb, new_arr_tb;
-logic[31:0] ins_val_tb; //value to be inserted
-logic [3:0] idx_tb; //array idx
+logic [0:15][3:0] arr_tb, new_arr_tb;
+logic[3:0] ins_val_tb;
+logic [3:0] idx_tb;
 
 indexed_rsh_arr #(
-                    .data_width_param(32),
+                    .data_width_param(4),
                     .max_elements_param(16),
                     .idx_width_param(4) )
     dut (

@@ -92,7 +92,7 @@ always begin
 
 //input test cases
 initial begin
-
+        #10
         rst_tb = 1'b1;
         #10;
         rst_tb = 1'b0;
